@@ -1,15 +1,32 @@
 var express = require('express');
 var router = express.Router();
 var request = require('request');
+const rootURL = 'https://api.github.com/';
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Express' });
+  res.render('index', { userData: null });
 });
 
 router.post('/', function(req, res) {
-  console.log(req.body.username);
-  res.render('index');
+  var options = {
+    url: rootURL + 'users/' + req.body.username,
+    headers: { 
+      'User-Agent': 'JosephCoburn',
+      'Authorization': 'token ' + process.env.GITHUB_TOKEN
+    }
+  };
+  request(options, function(err, response, body) {
+    var userData = JSON.parse(body);
+    // update the options url to fetch the user's repos
+    options.url = userData.repos_url;
+    request(options, function(err, response, body) {
+      // add a repos property
+      userData.repos = JSON.parse(body);
+      console.log(userData.repos[0]);
+      res.render('index', {userData: userData});
+    });
+  });
 });
 
 module.exports = router;
